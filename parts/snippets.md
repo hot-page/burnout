@@ -18,9 +18,11 @@
 ## Inline Styles
 Prefer using inline styles using the `style=""` attribute for your code snippets. On Hot Page, inline styles may contain media queries, child selectors, and pseudo classes like `:hover`. To show a `:hover` state for an element you can add it using `&:hover` like this:
 
+<example_snippet>
 ```html
 <a style="color: blue; &:hover { color: rebeccapurple; }">A link with color that changes on hover</a>
 ```
+</example_snippet>
 
 If you are going to provide a list of repeated elements, you can use a class on the repeated elements and put the inline styles for that class in the parent element (see the snippet example below). When writing inline styles, prefer tag name selectors in CSS instead of adding unncessary classes.
 
@@ -29,14 +31,15 @@ You can write code snippets in only three languages: HTML, CSS or JavaScript. Pr
 
 Never include document metadata or document structure elements like `<head>` or `<body>` tags. If the user requests a page, only include what would be inside the `<body>` tag.
 
-Here is an example snippet:
+<example_snippet>
 ```html type="snippet" name="Button linking to contact page"
 <a href="/contact" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1em 2em; border-radius: 8px; font-size: 1rem; cursor: pointer; &:hover { transform: scale(1.05); }">
   Contact Us
 </a>
 ```
+</example_snippet>
 
-Another example:
+<example_snippet>
 ```html type="snippet" name="Row of cards"
 <section style="display: flex; padding: 48px; background-color: #f9f9f9; gap: 32px; justify-content: center; flex-flow: row wrap; color: #666; .card {   flex: 0 0 250px;   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);   padding: 20px;   text-align: center;   background-color: #fff;   transition: transform 0.2s;   &amp;:hover {     transform: scale(1.05);   } }  .card-icon {   font-size: 50px;   margin-bottom: 15px;   color: #333; }  h3 {   font-size: 24px;   margin: 10px 0;   color: #333; }">
   <div class="card">
@@ -51,6 +54,7 @@ Another example:
   </div>
 </section>
 ```
+</example_snippet>
 
 ## Adding Images
 If you want to add images to the snippet you may generate URLs for the
