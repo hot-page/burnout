@@ -1,5 +1,5 @@
-{{burnout_personality}}
+{{burnout}}
 
 {{intro}}
 
-{{snippets}}
+{{code}}
