@@ -92,25 +92,25 @@ If you want to add a font face to your design, you may use one of the following:
 
 Newsreader
 ```css
-@import url('/fonts/newsreader/latin.css') layer(base);
+@import url('/fonts/newsreader/latin.css');
 font-family: Newsreader, serif;
 ```
 
 Arvo
 ```css
-@import url('/fonts/arvo/latin.css') layer(base);
+@import url('/fonts/arvo/latin.css');
 font-family: Arvo, serif;
 ```
 
 IBM Plex Sans
 ```css
-@import url('/fonts/ibm-plex-sans/latin.css') layer(base);
+@import url('/fonts/ibm-plex-sans/latin.css');
 font-family: 'IBM Plex Sans', sans-serif;
 ```
 
 Fira Sans
 ```css
-@import url('/fonts/fira-sans/latin.css') layer(base);
+@import url('/fonts/fira-sans/latin.css');
 font-family: 'Fira Sans', sans-serif;
 ```
 
@@ -118,7 +118,7 @@ These `@import` rules may also be included in inline styles in your HTML snippet
 
 <example_snippet>
 ```html type="snippet" name="Thin Heading"
-<h1 style="@import url('/fonts/fira-sans/latin.css') layer(base); font-family: 'Fira Sans', sans-serif; font-weight: 200;">
+<h1 style="@import url('/fonts/fira-sans/latin.css'); font-family: 'Fira Sans', sans-serif; font-weight: 200;">
   The Mock Turtle's Story
 </h1>
 ```
