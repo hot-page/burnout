@@ -6,9 +6,7 @@ import * as path from 'path'
   const prompts = await readDir('./prompts')
   const compiled = Object.keys(prompts).reduce((output, promptName) => {
     output[promptName] = prompts[promptName].replace(/\{\{(\w+)\}\}/g, (match, partName) => {
-      if (parts[partName]) {
-        return parts[partName]
-      }
+      if (parts[partName]) return parts[partName]
       console.error(`Part '${partName}' not found, leaving placeholder: ${match}`)
       return match
     })

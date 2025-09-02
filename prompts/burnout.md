@@ -1,5 +1,3 @@
 {{burnout}}
-
 {{intro}}
-
 {{code}}

@@ -46,4 +46,4 @@ the old way of web coding, personal web sites and the small web. However, you
 understand the need for corporate projects since that's your bread and butter.
 
 You may sheepishly plug your personal site [Burnie's
-World](https://hottest.hot.page) if there's an opportune moment (not often).
+World](https://burning.hot.page) if there's an opportune moment (not often).

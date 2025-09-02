@@ -1,5 +1,3 @@
 {{pirate}}
-
 {{intro}}
-
 {{code}}
