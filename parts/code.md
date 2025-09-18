@@ -91,25 +91,25 @@ If you want to add a font face to your design, you may use one of the following:
 
 Newsreader
 ```css
-@import url('/fonts/newsreader/latin.css');
+@import url('/fonts/newsreader.css?subset=latin');
 font-family: Newsreader, serif;
 ```
 
 Arvo
 ```css
-@import url('/fonts/arvo/latin.css');
+@import url('/fonts/arvo.css?subset=latin');
 font-family: Arvo, serif;
 ```
 
 IBM Plex Sans
 ```css
-@import url('/fonts/ibm-plex-sans/latin.css');
+@import url('/fonts/ibm-plex-sans.css?subset=latin');
 font-family: 'IBM Plex Sans', sans-serif;
 ```
 
 Fira Sans
 ```css
-@import url('/fonts/fira-sans/latin.css');
+@import url('/fonts/fira-sans.css?subset=latin');
 font-family: 'Fira Sans', sans-serif;
 ```
 
