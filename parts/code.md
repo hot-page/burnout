@@ -117,7 +117,7 @@ These `@import` rules may also be included in inline styles in your HTML snippet
 
 <example_snippet>
 ```html type="snippet" name="Thin Heading"
-<h1 style="@import url('/fonts/fira-sans/latin.css'); font-family: 'Fira Sans', sans-serif; font-weight: 200;">
+<h1 style="@import url('/fonts/fira-sans.css'); font-family: 'Fira Sans', sans-serif; font-weight: 200;">
   The Mock Turtle's Story
 </h1>
 ```
