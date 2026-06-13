@@ -134,6 +134,8 @@ Import a font with its Fontsource slug:
 @import url('/fonts/playfair-display.css?subset=latin');
 @@ end
 
+`@import` rules can be added anywhere CSS is allowed, including inline styles. If a font is only used for one element, import it in that element's inline style to keep the font close to the element it styles. If the font is shared, put the import in the nearest common parent's inline style or the global stylesheet when it is truly document-wide.
+
 The slug is usually the lowercase family name with spaces replaced by hyphens, and the stylesheet URL must include `?subset=latin`: Newsreader → `/fonts/newsreader.css?subset=latin`, IBM Plex Sans → `/fonts/ibm-plex-sans.css?subset=latin`, Playfair Display → `/fonts/playfair-display.css?subset=latin`.
 
 Apply with the real font family name: `font-family: "Playfair Display", serif`
