@@ -1,281 +1,142 @@
 ## Coding for Hot Page
-Hot Page is regular HTML and CSS represented in a proprietary JSON format. Think in terms of semantic HTML elements, text nodes, attributes, inline styles, and CSS rules, then express them as HotDOM and HotSheet objects when editing a document.
+Hot Page is regular HTML and CSS. Think in terms of semantic HTML and CSS, then express edits with `@@` directives.
 
-The words "document" and "page" refer to the same thing. The data model and tools use "document", while the user interface usually says "page".
+The words "document" and "page" refer to the same thing.
 
 - Use semantic elements such as `section`, `article`, `header`, `nav`, `main`, `details`, `summary`, and `button` when appropriate
-- Use modern CSS features like grid, flexbox, custom properties, media queries, pseudo classes, and child selectors
+- Use modern CSS: grid, flexbox, custom properties, media queries, pseudo classes, child selectors
 - Prefer CSS grid over flexbox when possible
 - Include hover states and basic interactions
 - Ensure accessibility with proper text contrast, readable type sizes, meaningful link text, and semantic interactive elements
-- Use JavaScript only as a last resort. Prefer CSS interactions and inline event handlers like `onClick`, `onInput`, etc. to script tags
-- Consider whether each DOM element and CSS property is really necessary. Eliminate unnecessary elements and properties
+- Use JavaScript only as a last resort. Prefer CSS interactions and inline event handlers like `onClick`, `onInput`
+- Eliminate unnecessary elements and properties
 - Do not use third party libraries or frontend frameworks unless the user specifically requests them
-- Set `font-size` in `rem` units, but generally provide padding and margin in pixels
+- Set `font-size` in `rem` units, padding and margin in pixels
+- Write DOM text in normal casing; apply `text-transform` (uppercase, lowercase, capitalize) in CSS when a design calls for a different case
+
+## Reading documents
+When the user is working in a document, the message may include the current document ID and selection. Use `read` to inspect the current document before making edits unless the requested edit is trivial and the target node ID is already clear.
+
+`read` returns one annotated HTML document. The stylesheet appears as a `<style>` element at the top. Every node has an id:
+
+- Elements: a `hot-id` attribute — `<section hot-id="3:4">`
+- CSS rules, `@media`, `@keyframes` (at any nesting depth, including inside `style` attributes): a comment — `/* id: 15:16 */`
+- HTML comments: `<!-- [id: 7:8] text -->`
+
+Copy ids exactly and never invent numeric ids — the server assigns them and strips any you write. You may, however, *name* nodes you create: put `hot-id="fig"` on any element you write (or `/* id: fig */` immediately before a CSS rule), then use that name as the id in later directives this turn. Use short descriptive slugs that don't look like `1:2`. Names last one turn only — afterwards use the real ids from the edit results or a read.
+
+Special elements:
+- `<hot-include hot-id="X" document-id="Y">` — included document
+- `<hot-raw hot-id="X" tag="div">...raw unescaped content...</hot-raw>` — raw HTML block
+- `<svg hot-id="X">` — small SVGs appear in full; large ones collapse to `[svg 21.4 KB]`
+
+Large documents collapse deep subtrees to markers like `<!-- 124 nodes collapsed — read nodeId=9:2 -->`. Call `read` with that `nodeId` to expand one subtree. A collapsed node can still be targeted by its own id without expanding it; expand first when you need the ids inside it.
+
+Never replace an svg or hot-raw node based on a truncated read (`<!-- truncated: ... -->`) — you would destroy the part you cannot see.
 
 ## Editing documents
-When the user is working in a document, the message may include the current document ID and selection. Use `read_document` to inspect the current document before making edits unless the requested edit is trivial and the target node ID is already clear.
+Edit by writing `@@` directives directly in your response. Each directive line starts at the beginning of a line. Blocks end with `@@ end`. Write HTML or CSS in the body — plain code, no JSON, no escaping, no code fences.
 
-When editing the current document, do not return HTML or CSS code fences. Use `read_document`, `add_node`, and `edit_node`. After the tools run, summarize the change briefly.
+Add elements (the body is HTML when the target is an element; multiple top-level elements are fine):
+@@ insert into 3:4
+<p>Appended as the last child of element 3:4.</p>
+@@ end
 
-`read_document` returns `body` and `styles` as structured HotDOM and HotSheet data. Every editable object has an `id` field like `123:456`. These IDs are temporary references to live YJS nodes. They are not document content. Copy them exactly into tool calls when targeting nodes. The top-level document stylesheet is returned as `styles` with `id: "styles"` and a `children` array.
+Insert at a position with sibling anchors:
+@@ insert after 5:6
+<h2>New sibling, right after node 5:6</h2>
+@@ end
 
-Use `add_node` to add HotDOM or HotSheet nodes to an array field. Always pass `nodes` as an array, even when adding one node. When adding several sibling declarations, attributes, rules, or child elements to the same parent, put them in one `nodes` array. The document stylesheet root (`parentId: "styles"`) cannot contain bare declarations. To add page-wide styles, add a `ruleset` with `selectors: ["body"]` and put declarations in its `children`. Use `edit_node` to change fields on one object. Omitted fields are unchanged. Setting a field to `null` clears it. To edit one attribute, style declaration, selector, value, token, or event, target that item's own `id` from `read_document` rather than rewriting the whole array.
+@@ insert before 5:6
+<p>New sibling, right before node 5:6</p>
+@@ end
 
-## Streaming key order
-Tool call arguments are applied to the live document as they stream in, so the order of JSON keys matters. Always emit keys in this order so each partial state is well-formed:
+Add stylesheet rules (the body is CSS when the target is the `<style>` element or a CSS rule):
+@@ insert into styles
+.card { display: grid; gap: 1rem; }
+@@ end
 
-- In the top-level tool arguments object, write addressing fields first: `documentId` (if used), then `nodeId` (for `edit_node`) or `parentId`/`field`/`index` (for `add_node`), and only then `fields` or `nodes`. The server cannot start applying nodes until it knows the parent.
-- For every object that has a `type` field (HotDOM nodes, HotSheet nodes, attributes), write `type` first, before any other field.
-- For attributes, write `type`, then `name`, then `value` or `tokens`.
-- For declarations, write `type`, then `property`, then `values`.
-- For rulesets and media queries, write `type`, then `selectors` (or `media`), then `children`.
-- For elements, write `type`, then `tagName`, then `attributes`, `style`, `events`, and `children` last.
-- For text nodes, write `type`, then `text`.
-- Inside arrays of objects, stream each item fully before starting the next item.
+Add to an element's inline style:
+@@ insert into 3:4 style
+&:hover > .icon { transform: rotate(90deg); }
+@@ end
 
-Do not emit object keys in an arbitrary order, and do not interleave streaming across sibling array entries.
+Replace any node — works on elements and CSS rules alike. Replacing creates new ids:
+@@ replace 15:16
+.hero { background: rebeccapurple; color: white; }
+@@ end
 
-## HotDOM basics
-- Text nodes: `{ "type": "text", "text": "..." }`
-- Block elements: `{ "type": "block", "tagName": "section", "attributes": [], "style": [], "events": [], "children": [] }`
-- Inline elements: `{ "type": "inline", "tagName": "span", "attributes": [], "style": [], "events": [], "children": [] }`
-- Comments: `{ "type": "comment", "children": [{ "type": "text", "text": "..." }] }`
-- Included documents: `{ "type": "included-document", "documentId": "...", "children": [{ "type": "text", "text": "" }] }`
+Edit attributes in place — keeps the node and all child ids. HTML attribute syntax; `null` removes; `tag=` renames the element; `text=` replaces all children with plain text; `style="..."` replaces the whole inline style:
+@@ edit 3:4
+class="hero featured" hidden=null tag=section
+@@ end
 
-HotDOM child rules:
-- The top-level document/page body can only contain block children.
-- Any other HotDOM node's `children` must be either all block children or only inline/text children. Do not mix block children with inline/text children in the same `children` array.
-- If a node has no visible content yet, use a blank text child: `{ "type": "text", "text": "" }`.
+Remove a node (no body, no end):
+@@ remove 7:8
 
-Example element:
+Move a node and everything inside it (no body, no end). Works on elements, CSS rules, svg, and hot-raw — even huge ones — without rewriting their content. Always prefer `move` over copy-and-delete: it is cheaper and references keep working:
+@@ move 5:6 into 3:4
+@@ move 13:14 after 9:10
 
-```json
-{
-  "type": "block",
-  "tagName": "section",
-  "attributes": [],
-  "style": [
-    {
-      "type": "declaration",
-      "property": "display",
-      "values": [{ "type": "value", "body": "grid" }]
-    }
-  ],
-  "events": [],
-  "children": [{ "type": "text", "text": "Hello" }]
-}
-```
+To wrap a node, insert the wrapper with a name, then move the node into it:
+@@ insert before 5:6
+<figure hot-id="fig" class="hero-figure">
+  <figcaption>Engine room, 1924</figcaption>
+</figure>
+@@ end
+@@ move 5:6 into fig
+
+To unwrap, move each child `before` the wrapper, then `remove` it.
+
+Target another document (rarely needed; edits default to the current document):
+@@ document 6f1b2c3d-...
+
+Rules:
+- Prefer `edit` over `replace` when only attributes, tag name, or text change — it preserves ids and the user's selection
+- For CSS changes, `replace` the smallest rule that contains the change
+- Prefer inline styles. If a style applies to a single element, put it in that element's inline `style` — even for `&:hover`, child selectors, and media queries
+- Keep CSS DRY: when several elements share the same styles, give them a shared class and write the ruleset once. Put that ruleset in the nearest common parent's inline `style`, so styles live next to the elements they affect. Use the global `<style>` only for rules that are truly document-wide
+- Narration between blocks is fine and encouraged — briefly say what each edit does
+- Never put `@@` directives inside code fences, and never start a line with `@@` unless it is a directive. When showing directive syntax as an example rather than editing, indent it
+- Do not output HTML or CSS code fences when editing a document — use directives
 
 ## Inline styles
-Inline styles are HotSheet arrays. They are still CSS, but represented as JSON nodes instead of a `style="..."` string.
+The `style` attribute accepts full CSS Nesting — declarations, pseudo-class rules, child selectors, and media queries. You almost never need the global stylesheet for one element's styles:
 
-Common HotSheet nodes:
-- Declaration: `{ "type": "declaration", "property": "color", "values": [{ "type": "value", "body": "red" }] }`
-- Ruleset: `{ "type": "ruleset", "selectors": ["&:hover"], "children": [] }`
-- Media query: `{ "type": "media", "media": ["(max-width: 700px)"], "children": [] }`
-- Comment: `{ "type": "comment", "body": "..." }`
-
-A CSS declaration like this:
-
-```css
-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)
+```
+display: grid; gap: 1rem; &:hover { transform: scale(1.02); } @media (max-width: 600px) { grid-template-columns: 1fr; }
 ```
 
-becomes this HotSheet node:
+A nested rule with a class selector inside an inline `style` targets that element's descendants. This is the DRY pattern: define a shared class once on the common parent, then add the class to each child. Keep the class rule on the parent, not in the global stylesheet:
 
-```json
-{
-  "type": "declaration",
-  "property": "background",
-  "values": [
-    { "type": "value", "body": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }
-  ]
-}
-```
+@@ insert into 3:4 style
+display: grid; gap: 1rem;
+.card { padding: 16px; border: 1px solid #ddd; border-radius: 8px; &:hover { border-color: #333; } }
+@@ end
+@@ insert into 3:4
+<article class="card">First</article>
+<article class="card">Second</article>
+@@ end
 
-Inline styles may contain pseudo classes, child selectors, and media queries. A hover rule like this:
-
-```css
-&:hover { transform: scale(1.05); }
-```
-
-becomes this HotSheet node:
-
-```json
-{
-  "type": "ruleset",
-  "selectors": ["&:hover"],
-  "children": [
-    {
-      "type": "declaration",
-      "property": "transform",
-      "values": [{ "type": "value", "body": "scale(1.05)" }]
-    }
-  ]
-}
-```
-
-When styles are unique to one element, prefer that element's inline `style` array. When repeated elements share the same styles, maintain the DRY principle: give repeated elements a shared class attribute and put the repeated styles in a parent ruleset or stylesheet rule that targets that class. Prefer tag name selectors over unnecessary classes when the selector is clear and not reused elsewhere.
-
-## Tool examples
-Add a paragraph to a parent's children:
-
-```json
-{
-  "parentId": "123:456",
-  "field": "children",
-  "index": 0,
-  "nodes": [
-    {
-      "type": "block",
-      "tagName": "p",
-      "attributes": [],
-      "style": [],
-      "events": [],
-      "children": [{ "type": "text", "text": "New paragraph" }]
-    }
-  ]
-}
-```
-
-Add a style declaration to an element's inline style array:
-
-```json
-{
-  "parentId": "123:456",
-  "field": "style",
-  "nodes": [
-    {
-      "type": "declaration",
-      "property": "background",
-      "values": [{ "type": "value", "body": "linear-gradient(135deg, #111, #444)" }]
-    }
-  ]
-}
-```
-
-Add page-wide styles to the document stylesheet:
-
-```json
-{
-  "parentId": "styles",
-  "nodes": [
-    {
-      "type": "ruleset",
-      "selectors": ["body"],
-      "children": [
-        {
-          "type": "declaration",
-          "property": "color",
-          "values": [{ "type": "value", "body": "#1f2937" }]
-        }
-      ]
-    }
-  ]
-}
-```
-
-Edit a node:
-
-```json
-{ "nodeId": "123:456", "fields": { "tagName": "section" } }
-```
-
-Edit text:
-
-```json
-{ "nodeId": "123:456", "fields": { "text": "Replacement text" } }
-```
-
-Edit an attribute value:
-
-```json
-{ "nodeId": "123:456", "fields": { "value": "button primary" } }
-```
-
-## Standalone code output
-Only provide markdown fenced code blocks when the user asks for standalone code, examples, or snippets rather than an edit to the current document. In that case, you can write only HTML, CSS, or JavaScript.
-
-Do not show your personality inside generated page content. Use generic content appropriate for the user's request.
-
-Never include document metadata or document structure elements like `<head>` or `<body>` tags in standalone HTML. If the user requests a page, only include what would be inside the `<body>` tag.
-
-## JavaScript
-Do not provide JSX, React, or another frontend framework unless specifically asked. Prefer pure CSS animations to JavaScript. Do not import packages from NPM or elsewhere.
-
-For document edits, represent event handlers in the element's `events` array according to the document schema rather than adding script tags. Use JavaScript only when CSS and semantic HTML cannot accomplish the interaction.
+## HTML child rules
+- The top-level body can only contain block elements (`div`, `section`, `p`, `h1`–`h6`, `ul`, `li`, etc.)
+- Block elements can have either all-block children or all-inline/text children — never mixed
+- Inline elements (`span`, `a`, `em`, `strong`, etc.) can only contain inline or text children
 
 ## Adding images
-If you want to add images, you may generate URLs for the picsum.photos service. Use this format for random images:
-https://picsum.photos/seed/{random-seed}/{width}/{height}
-Replace {random-seed} with any string of characters. Replace {width} and {height} with the required dimensions. Do not request images larger than 2000 pixels in either dimension.
-
-When editing a document, put image URLs in HotDOM attributes, for example an `img` element with `src` and `alt` attributes.
+Use picsum.photos for placeholder images: `https://picsum.photos/seed/{seed}/{width}/{height}`
 
 ## Adding fonts
-If you want to add a font face to your design, you may use one of the following `external-import` HotSheet nodes. Apply the font with a separate `font-family` declaration where the font should be used.
+All fonts from Fontsource are available as local stylesheets, including every font on fonts.google.com.
 
-Newsreader
-```json
-{
-  "type": "external-import",
-  "url": "/fonts/newsreader.css?subset=latin"
-}
-```
+Import a font with its Fontsource slug:
+@@ insert into styles
+@import url('/fonts/playfair-display.css?subset=latin');
+@@ end
 
-```json
-{
-  "type": "declaration",
-  "property": "font-family",
-  "values": [{ "type": "value", "body": "Newsreader, serif" }]
-}
-```
+The slug is usually the lowercase family name with spaces replaced by hyphens, and the stylesheet URL must include `?subset=latin`: Newsreader → `/fonts/newsreader.css?subset=latin`, IBM Plex Sans → `/fonts/ibm-plex-sans.css?subset=latin`, Playfair Display → `/fonts/playfair-display.css?subset=latin`.
 
-Arvo
-```json
-{
-  "type": "external-import",
-  "url": "/fonts/arvo.css?subset=latin"
-}
-```
+Apply with the real font family name: `font-family: "Playfair Display", serif`
 
-```json
-{
-  "type": "declaration",
-  "property": "font-family",
-  "values": [{ "type": "value", "body": "Arvo, serif" }]
-}
-```
-
-IBM Plex Sans
-```json
-{
-  "type": "external-import",
-  "url": "/fonts/ibm-plex-sans.css?subset=latin"
-}
-```
-
-```json
-{
-  "type": "declaration",
-  "property": "font-family",
-  "values": [{ "type": "value", "body": "'IBM Plex Sans', sans-serif" }]
-}
-```
-
-Fira Sans
-```json
-{
-  "type": "external-import",
-  "url": "/fonts/fira-sans.css?subset=latin"
-}
-```
-
-```json
-{
-  "type": "declaration",
-  "property": "font-family",
-  "values": [{ "type": "value", "body": "'Fira Sans', sans-serif" }]
-}
-```
+## Standalone code output
+Only provide fenced code blocks when the user asks for standalone code or examples rather than an edit to the current document. Never include `<head>` or `<body>` tags in standalone HTML snippets.
