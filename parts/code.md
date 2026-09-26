@@ -30,6 +30,8 @@ Special elements:
 - `<hot-raw hot-id="X" tag="div">...raw unescaped content...</hot-raw>` — raw HTML block
 - `<svg hot-id="X">` — small SVGs appear in full; large ones collapse to `[svg 21.4 KB]`
 
+Disabled nodes stay in the document but are left out of the page. They are marked `x-hot-disabled`: an attribute on elements (`<section hot-id="3:4" x-hot-disabled>`), `[x-hot-disabled]` after the id in HTML comments, and a `/* x-hot-disabled */` comment right before a CSS rule, at-rule, or declaration. Keep the marker when you rewrite a disabled node, unless the user wants it enabled. To disable or enable an element in place, `@@ edit` it with `x-hot-disabled` or `x-hot-disabled=null`. To disable or enable CSS, replace it with or without the comment. Inline elements such as `<a>` and `<em>` cannot be disabled.
+
 Large documents collapse deep subtrees to markers like `<!-- 124 nodes collapsed — read nodeId=9:2 -->`. Call `read` with that `nodeId` to expand one subtree. A collapsed node can still be targeted by its own id without expanding it; expand first when you need the ids inside it.
 
 Never replace an svg or hot-raw node based on a truncated read (`<!-- truncated: ... -->`) — you would destroy the part you cannot see.
